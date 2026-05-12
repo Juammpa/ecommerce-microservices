@@ -1,0 +1,90 @@
+networks:
+  ecommerce-network:
+    driver: bridge
+
+services:
+
+  product-service:
+    build: ./product-service
+    container_name: product-service
+    mem_limit: 512m
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-products:3306/db_products
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+    restart: always
+    depends_on:
+      db-products:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+
+  # Base de datos de productos
+  db-products:
+    image: mysql:8.0
+    container_name: db-products
+    environment:
+      MYSQL_DATABASE: db_products
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - "3307:3306"
+    restart: always
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-h","localhost"]
+      timeout: 10s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    mem_limit: 512m
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-orders:3306/db_orders
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+    restart: always
+    depends_on:
+      db-orders:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+
+  # Base de datos de ordenes
+  db-orders:
+    image: mysql:8.0
+    container_name: db-orders
+    environment:
+      MYSQL_DATABASE: db_orders
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - "3308:3306"
+    restart: always
+    healthcheck:
+      test: ["CMD","mysqladmin","ping","-h","localhost"]
+      timeout: 10s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  gateway-api:
+    build: ./gateway-api
+    container_name: gateway-api
+    ports:
+      - "8080:8080"
+    restart: always
+    depends_on:
+      - product-service
+      - order-service
+    networks:
+      - ecommerce-network
+
+
+
+
+
